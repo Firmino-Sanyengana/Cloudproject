@@ -1,0 +1,17 @@
+FROM node:20-slim
+
+# Instala o OpenSSL exigido pelo Prisma
+RUN apt-get update -y && apt-get install -y openssl
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm install
+RUN npx prisma generate
+
+COPY . .
+
+EXPOSE 4000
+CMD ["npm", "run", "dev","npx prisma db push && npm run dev"]

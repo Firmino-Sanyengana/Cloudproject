@@ -1,0 +1,35 @@
+services:
+  backend:
+    build: ./backend
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=file:/app/prisma/data/dev.db
+    volumes:
+      - sqlitedata:/app/prisma/data
+      - /app/node_modules
+    networks:
+      - app-net
+
+  frontend:
+    build: ./frontend
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "4001:4001"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  sqlitedata:
+
+networks:
+  app-net:

@@ -1,0 +1,193 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  name              String
+  email             String             @unique
+  password          String
+  role              String             @default("STUDENT") // STUDENT | ADMIN
+  createdAt         DateTime           @default(now())
+
+  emailVerified     Boolean            @default(true)
+
+  enrollments       Enrollment[]
+  progress          Progress[]
+  favorites         Favorite[]
+  history           History[]
+  quizAttempts      QuizAttempt[]
+  exerciseAttempts  ExerciseAttempt[]
+  chatMessages      ChatMessage[]
+  notifications     Notification[]
+  passwordResets    PasswordReset[]
+  sentAdminMessages AdminMessage[]     @relation("AdminFrom")
+  receivedAdminMsgs AdminMessage[]     @relation("AdminTo")
+}
+
+model PendingRegistration {
+  id                          Int      @id @default(autoincrement())
+  name                        String
+  email                       String   @unique
+  password                    String
+  verificationToken           String   @unique
+  verificationTokenExpiresAt  DateTime
+  createdAt                   DateTime @default(now())
+}
+
+model Course {
+  id          Int           @id @default(autoincrement())
+  title       String
+  description String
+  level       String
+  language    String
+  cover       String?
+  createdAt   DateTime      @default(now())
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  chat        ChatMessage[]
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  @@unique([userId, courseId])
+}
+
+model Lesson {
+  id        Int        @id @default(autoincrement())
+  courseId  Int
+  title     String
+  content   String
+  order     Int        @default(0)
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  exercises Exercise[]
+  quizzes   Quiz[]
+  progress  Progress[]
+}
+
+model Exercise {
+  id        Int               @id @default(autoincrement())
+  lessonId  Int
+  type      String            // FILL_BLANK | SCRAMBLED | TRANSLATE
+  prompt    String
+  answer    String
+  hint      String?
+  lesson    Lesson            @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts  ExerciseAttempt[]
+}
+
+model ExerciseAttempt {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  exerciseId Int
+  answer     String
+  correct    Boolean
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+}
+
+model Quiz {
+  id        Int           @id @default(autoincrement())
+  lessonId  Int
+  question  String
+  options   String
+  correct   Int
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts  QuizAttempt[]
+}
+
+model QuizAttempt {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  quizId    Int
+  score     Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Progress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  lessonId  Int
+  completed Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@unique([userId, lessonId])
+}
+
+model Favorite {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  text        String
+  translation String
+  source      String
+  target      String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model History {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  text        String
+  translation String
+  source      String
+  target      String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  userId    Int
+  message   String
+  createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminMessage {
+  id        Int      @id @default(autoincrement())
+  fromId    Int
+  toId      Int
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+  from      User     @relation("AdminFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("AdminTo", fields: [toId], references: [id], onDelete: Cascade)
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
