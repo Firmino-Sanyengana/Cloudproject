@@ -11,7 +11,7 @@ services:
     environment:
       - DATABASE_URL=file:/app/prisma/data/dev.db
     volumes:
-      - sqlitedata:/app/prisma/data
+      - sqlitedata:/app/prisma/data  # Este volume persiste o .seed_executed também
       - /app/node_modules
     networks:
       - app-net
